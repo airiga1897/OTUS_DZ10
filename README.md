@@ -208,8 +208,22 @@ Terraform подключается по HTTPS с `insecure = true`: шифров
 
 У гостя нет публичного адреса. Подключение идёт через публичный адрес узла
 Proxmox по SSH на порту 22; выход оператора должен входить в разрешённые `/32`.
-После успешного `deploy` выполните следующий блок в PowerShell 7 из корня клона.
+После успешного `deploy` выполните один из блоков ниже в PowerShell 7 из корня клона.
 Нужны команды OpenSSH `ssh` и `ssh-keygen`.
+
+Краткий вариант для исходных адреса `10.111.0.10` и пользователя `student`:
+
+```powershell
+$hostIp = (Get-Content .local/runtime/context.json -Raw | ConvertFrom-Json).host.public_ip
+
+ssh -i .local/runtime/operator `
+    -o "ProxyCommand=ssh -i .local/runtime/operator -W %h:%p operator@$hostIp" `
+    student@10.111.0.10
+```
+
+Используется стандартный файл OpenSSH `known_hosts`. При первом подключении
+SSH может запросить подтверждение ключей узла и гостя. Вариант ниже закрепляет
+оба ключа по локальным данным cloud-init и учитывает адрес гостя из контекста.
 
 Адреса и имя пользователя берутся из контекста стенда. Используется ключ
 оператора `.local/runtime/operator`, пароль не нужен. Ключи серверов закрепляются
