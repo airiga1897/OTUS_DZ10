@@ -339,8 +339,13 @@ class Lab:
             raise LabError("State гостя не соответствует контексту")
         print("Размещение: YC / " + self.context["identity"]["zone"])
         print(f"https://{host['public_ip']}:8006/")
+        print("User name: reviewer (без @pve)")
+        print("Realm (тип аутентификации): Proxmox VE authentication server (pve)")
+        print("Выберите указанный Realm в списке формы входа.")
+        print("Скопировать пароль в буфер обмена (PowerShell):")
         print(
-            "Учётная запись: reviewer@pve; пароль — .local/runtime/credentials.json (ui_password)"
+            "(Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password"
+            " | Set-Clipboard"
         )
         print(
             "Штатный сертификат PVE: примите предупреждение браузера; проверка Terraform отключена."

@@ -1,0 +1,28 @@
+{
+  "scope": "scripts/lab.py:Lab.open",
+  "source_sha256": "cd80575f7d06aa22425d01b6a186ce31d02a7fae2f73fdfb4c889a104e4087c9",
+  "coverage_version": "7.17.4",
+  "branch_coverage": true,
+  "summary": {
+    "covered_lines": 17,
+    "num_statements": 17,
+    "percent_covered": 100.0,
+    "percent_covered_display": "100",
+    "missing_lines": 0,
+    "excluded_lines": 0,
+    "percent_statements_covered": 100.0,
+    "percent_statements_covered_display": "100",
+    "num_branches": 6,
+    "num_partial_branches": 0,
+    "covered_branches": 6,
+    "missing_branches": 0,
+    "percent_branches_covered": 100.0,
+    "percent_branches_covered_display": "100"
+  },
+  "scope_note": "100% applies to Lab.open only, not the whole module or repository.",
+  "commands": [
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/ui-open.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/ui-open.coverage -o .tools/coverage/ui-open.json"
+  ],
+  "full_report": ".tools/coverage/ui-open.json"
+}
