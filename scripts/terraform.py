@@ -2,6 +2,7 @@ import json
 import os
 
 from common import LabError, check_plan, run, save_json
+from progress import Stage
 
 YC_ADDRESSES = {
     "yandex_function.operator_ip",
@@ -33,7 +34,9 @@ class Terraform:
         self.env["TF_WORKSPACE"] = "default"
         cache = root / ".tools/provider-cache"
         cache.mkdir(parents=True, exist_ok=True)
-        self.env["TF_PLUGIN_CACHE_DIR"] = str(cache)
+        # Runtime init reads this directory as a mirror via -plugin-dir;
+        # do not also use it as a writable plugin cache.
+        self.env.pop("TF_PLUGIN_CACHE_DIR", None)
         cli_config = runtime / "terraform.rc"
         cli_config.write_text(
             "disable_checkpoint = true\nprovider_installation {\n  direct {}\n}\n"
@@ -44,7 +47,8 @@ class Terraform:
         self.allowed = YC_ADDRESSES if module == "yc" else PVE_ADDRESSES
 
     def call(self, *args):
-        return run([self.executable, f"-chdir={self.directory}", *args], env=self.env)
+        with Stage(f"Terraform {self.module}: {args[0]}"):
+            return run([self.executable, f"-chdir={self.directory}", *args], env=self.env)
 
     def init(self):
         if not (self.directory / ".terraform.lock.hcl").exists():
@@ -55,6 +59,7 @@ class Terraform:
             "-lockfile=readonly",
             "-reconfigure",
             f"-backend-config=path={self.state.as_posix()}",
+            f"-plugin-dir={(self.root / '.tools/provider-cache').as_posix()}",
         )
 
     def resources(self):

@@ -9,7 +9,10 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from progress import report_stage
 
+
+@report_stage("Подготовка закреплённой версии Terraform")
 def install_terraform(root):
     version = json.loads((root / "config/lab.json").read_text())["tools"]["terraform"]
     system = "windows" if os.name == "nt" else "linux"
@@ -48,6 +51,7 @@ def install_terraform(root):
     target.chmod(0o755)
 
 
+@report_stage("Подготовка закреплённой версии YC CLI")
 def install_yc(root):
     if os.name != "nt":
         return

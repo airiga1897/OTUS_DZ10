@@ -13,6 +13,7 @@ import zipfile
 from contextlib import contextmanager
 
 from common import ROOT, LabError, cleanup, config, load_json, merge_cidrs, private_dir, save_json
+from progress import Stage, report_stage
 from remote import Remote
 from security import cloud_init, remove_legacy_ca, ssh_key
 from yc import YC
@@ -26,7 +27,8 @@ def exclusive(root):
     for path in (directory, directory / "runtime"):
         if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
             raise LabError("Ссылки вместо служебных каталогов запрещены")
-    private_dir(directory)
+    with Stage("Подготовка локальных данных и проверка прав доступа"):
+        private_dir(directory)
     with (directory / "operation.lock").open("a+b") as stream:
         stream.seek(0)
         stream.write(b"0")
@@ -70,6 +72,7 @@ class Lab:
     def save(self):
         save_json(self.context_path, self.context)
 
+    @report_stage("Проверка локального контекста и размещения")
     def bind(self, cfg):
         api = self.api()
         identity = {
@@ -95,6 +98,7 @@ class Lab:
             }
             self.save()
 
+    @report_stage("Проверка сохранённой области ресурсов YC")
     def bound_api(self):
         if not self.context:
             raise LabError("Локальный контекст отсутствует")
@@ -124,6 +128,7 @@ class Lab:
         ]
         self.save()
 
+    @report_stage("Подготовка параметров Terraform и cloud-init")
     def yc_variables(self, cfg):
         package = self.runtime / "function.zip"
         if not package.exists():
@@ -154,6 +159,7 @@ class Lab:
             "start_guest": start,
         }
 
+    @report_stage("Проверка HTTPS API и версии Proxmox")
     def tls_check(self):
         address = self.context["host"]["public_ip"]
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -230,7 +236,8 @@ class Lab:
                 # provider field through qm, then let Terraform perform the actual start.
                 pve.apply(self.pve_variables(cfg, start=False))
             vm_id = int(cfg["guest"]["vm_id"])
-            remote.command(f"sudo qm set {vm_id} --kvm 0")
+            with Stage("Настройка гостя для QEMU без KVM"):
+                remote.command(f"sudo qm set {vm_id} --kvm 0")
             print("Terraform создаёт и запускает гостевую ВМ в режиме QEMU.")
             pve.apply(self.pve_variables(cfg))
             self.context["guest_deleted"] = False
@@ -240,6 +247,7 @@ class Lab:
             remote.close()
         print("Стенд оставлен работающим. Выполните verify для проверки гостевой ОС.")
 
+    @report_stage("Проверка входа в Proxmox и cookie-сеанса")
     def session_check(self):
         """Exercise the web account's ticket and cookie session over native HTTPS."""
         credentials = load_json(self.runtime / "credentials.json")
@@ -315,6 +323,7 @@ class Lab:
         )
         print("Параметры ВМ, гостевая ОС, cloud-init, SSH, HTTPS API и повторные планы проверены.")
 
+    @report_stage("Проверка локального state и подготовка URL")
     def open(self):
         if not self.context or self.context["phase"] not in ("deployed", "verified"):
             raise LabError("Нет завершённого локального развёртывания")
@@ -354,14 +363,15 @@ class Lab:
             "yandex_vpc_subnet": ("vpc", "subnets"),
             "yandex_vpc_security_group": ("vpc", "securityGroups"),
         }
-        for resource in self.context["resources"]:
-            service, collection = mapping[resource["type"]]
-            current = api.get(service, collection + "/" + resource["id"], missing_ok=True)
-            if current and (
-                current.get("folderId") != api.folder_id
-                or (current.get("labels", {}).get("lab") != cfg["namespace"])
-            ):
-                raise LabError("API не подтвердил владение ресурсом")
+        with Stage("Проверка владения ресурсами перед удалением"):
+            for resource in self.context["resources"]:
+                service, collection = mapping[resource["type"]]
+                current = api.get(service, collection + "/" + resource["id"], missing_ok=True)
+                if current and (
+                    current.get("folderId") != api.folder_id
+                    or (current.get("labels", {}).get("lab") != cfg["namespace"])
+                ):
+                    raise LabError("API не подтвердил владение ресурсом")
         if (self.runtime / "proxmox.tfstate").exists() and not self.context.get("guest_deleted"):
             pve = self.tf("proxmox")
             pve.init()
@@ -393,7 +403,8 @@ class Lab:
         save_json(
             self.root / "evidence/deletion.json", {"terraform_empty": True, "api_absent": True}
         )
-        cleanup(self.root, self.runtime)
+        with Stage("Очистка локальных данных после подтверждённого удаления"):
+            cleanup(self.root, self.runtime)
         print("Удаление подтверждено state и API. Служебные данные стенда очищены.")
 
 

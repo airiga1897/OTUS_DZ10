@@ -16,6 +16,7 @@ def check(*args):
 
 
 def main():
+    os.environ.pop("TF_PLUGIN_CACHE_DIR", None)
     expected = json.loads((ROOT / "config/lab.json").read_text())["proxmox"]["key_sha256"]
     key = ROOT / "provision/proxmox-archive-keyring.gpg"
     if hashlib.sha256(key.read_bytes()).hexdigest() != expected:
@@ -39,6 +40,7 @@ def main():
             "-backend=false",
             "-input=false",
             "-lockfile=readonly",
+            f"-plugin-dir={(ROOT / '.tools/provider-cache').as_posix()}",
         )
         check(tf, f"-chdir=terraform/{module}", "validate")
         check(tf, f"-chdir=terraform/{module}", "test")

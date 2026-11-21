@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 
 from common import LabError, public_ipv4, require_private_file, run
+from progress import report_stage
 
 SERVICES = {
     "resource": "https://resource-manager.api.cloud.yandex.net/resource-manager/v1",
@@ -25,6 +26,7 @@ class YC:
         self.cloud_id, self.folder_id, self.token = cloud_id, folder_id, token
 
     @classmethod
+    @report_stage("Чтение реквизитов YC из окружения")
     def from_env(cls):
         values = [os.environ.get(key, "") for key in ("YC_CLOUD_ID", "YC_FOLDER_ID", "YC_TOKEN")]
         if not all(values):
@@ -32,6 +34,7 @@ class YC:
         return cls(*values)
 
     @classmethod
+    @report_stage("Авторизация YC через локальный профиль")
     def from_profile(cls, root):
         executable = root / ".tools/bin/yc.exe"
         profile = root / ".local/yc/config.yaml"
@@ -92,6 +95,7 @@ class YC:
         if cloud.get("id") != self.cloud_id:
             raise LabError("Не подтверждена область облака")
 
+    @report_stage("Проверка области YC, размещения, образа, квот и сетей")
     def preflight(self, cfg, owned):
         self.scope()
         for service, collection in (
@@ -205,6 +209,7 @@ class YC:
                 "Конфигурация платформы выходит за проверяемое сочетание standard-v3 4/8"
             )
 
+    @report_stage("Подтверждение IPv4 оператора через приватную функцию YC")
     def operator_ip(self, function_id):
         nonce = secrets.token_hex(32)
         response = self.request(f"https://functions.yandexcloud.net/{function_id}?nonce={nonce}")
@@ -212,6 +217,7 @@ class YC:
             raise LabError("Ответ функции не соответствует nonce текущего запроса")
         return public_ipv4(response.get("ip", ""))
 
+    @report_stage("Проверка отсутствия ресурсов через API YC")
     def audit_absent(self, resources, namespace):
         collections = {
             "yandex_function": ("functions", "functions"),

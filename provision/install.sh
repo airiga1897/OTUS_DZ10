@@ -2,6 +2,8 @@
 set -euo pipefail
 exec 1>&2
 export DEBIAN_FRONTEND=noninteractive
+progress() { printf 'DZ10_PROGRESS:%s\n' "$1" >&2; }
+progress host_prepare
 node=$1 private_ip=$2 version=$3 kernel=$4 kernel_version=$5 key_sha=$6
 test "$(id -u)" = 0
 . /etc/os-release
@@ -28,8 +30,11 @@ for path in paths:
         text = text.replace('http://download.proxmox.com/debian/pve', 'https://mirror.yandex.ru/mirrors/download.proxmox.com/debian/pve')
         path.write_text(text)
 PYMIRROR
+progress debian_update
 apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=20 update --error-on=any
+progress base_packages
 apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install -y ca-certificates curl gnupg
+progress pve_repo
 install -m 644 /home/operator/dz10/proxmox-archive-keyring.gpg /usr/share/keyrings/proxmox-archive-keyring.gpg
 echo "$key_sha  /usr/share/keyrings/proxmox-archive-keyring.gpg" | sha256sum -c -
 cat >/etc/apt/sources.list.d/dz10-pve.sources <<'EOF'
@@ -41,6 +46,7 @@ Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
 EOF
 # This is a private lab using the signed no-subscription repository.
 rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/pve-enterprise.list
+progress pve_update
 apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=20 update --error-on=any
 python3 - <<'PYPINS'
 import json
@@ -49,10 +55,12 @@ pins = json.loads(Path('/home/operator/dz10/proxmox-packages.json').read_text())
 text = '\n\n'.join(f'Package: {name}\nPin: version {version or "*"}\nPin-Priority: {1001 if version else -1}' for name, version in pins.items()) + '\n'
 Path('/etc/apt/preferences.d/dz10-pve').write_text(text)
 PYPINS
+progress pve_kernel
 apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install -y "$kernel=$kernel_version"
 # Keep the cloud Debian kernel as a recovery option. PVE's kernel is selected by GRUB.
 # Seed the stock LXC catalogue from the signed package. This lab uses QEMU;
 # its installation must not wait for the optional external LXC catalogue update.
+progress pve_download
 apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install --download-only -y "proxmox-ve=$version" ifupdown2 nftables e2fsprogs python3 curl
 if test ! -e /var/lib/pve-manager/apl-info/download.proxmox.com; then
     mkdir -p /var/lib/pve-manager/apl-info
@@ -60,7 +68,9 @@ if test ! -e /var/lib/pve-manager/apl-info/download.proxmox.com; then
     test -n "$package"
     dpkg-deb --fsys-tarfile "$package" | tar -xOf - ./usr/share/doc/pve-manager/aplinfo.dat > /var/lib/pve-manager/apl-info/download.proxmox.com
 fi
+progress pve_install
 apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install -y "proxmox-ve=$version" ifupdown2 nftables e2fsprogs python3 curl
 rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/pve-enterprise.list
 apt-mark hold proxmox-ve "$kernel"
+progress bootloader
 update-grub

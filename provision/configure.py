@@ -228,13 +228,21 @@ def image(guest):
             temporary.unlink(missing_ok=True)
 
 
+def progress(stage):
+    print("DZ10_PROGRESS:" + stage, file=sys.stderr, flush=True)
+
+
 def main():
     if os.geteuid() != 0:
         raise RuntimeError("Root required")
     cfg = json.load(sys.stdin)
+    progress("storage")
     storage()
+    progress("network")
     network(cfg["guest"])
+    progress("image")
     image(cfg["guest"])
+    progress("cloud_init")
     # 'local' is the standard PVE directory storage; snippets stay private to the node.
     local = json.loads(command("pvesh", "get", "/storage/local", "--output-format", "json"))
     if local.get("path") != "/var/lib/vz" or local.get("type") != "dir":
@@ -248,10 +256,13 @@ def main():
         Path("/home/operator/dz10/guest-cloud-init.yaml").read_text(),
         0o600,
     )
+    progress("certificate")
     # Use PVE's native certificate; remove only a previous custom override.
     if Path("/etc/pve/local/pveproxy-ssl.pem").exists():
         command("pvenode", "cert", "delete", "--restart", "1")
+    progress("accounts")
     result = credentials()
+    progress("finish")
     for name in ("pve.key", "pve.crt", "guest-cloud-init.yaml"):
         Path("/home/operator/dz10", name).unlink(missing_ok=True)
     print(json.dumps(result))
