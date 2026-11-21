@@ -55,11 +55,11 @@
   "scope_note": "100% applies to listed scopes, not the whole repository.",
   "source_sha256": {
     "scripts/proxmox.py": "e39a2f8a5f5da96f4d9fbe6ba0624a2b2540f649a8321ae888e81a0ad109eabb",
-    "scripts/lab.py": "75a04e824dd92275367fce18c8530edb3074d548d00e670e46742a8a1b6a1907"
+    "scripts/lab.py": "e5556b25e2c6f34b23d4d9c5b16a857d004651756ac6687561daeef7ece0efbc"
   },
   "commands": [
-    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/proxmox-api.coverage -m unittest discover -s tests -q",
-    "poetry run coverage json --data-file=.tools/coverage/proxmox-api.coverage -o .tools/coverage/proxmox-api.json"
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/access.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/access.coverage -o .tools/coverage/access.json"
   ],
-  "full_report": ".tools/coverage/proxmox-api.json"
+  "full_report": ".tools/coverage/access.json"
 }

@@ -181,7 +181,9 @@ poetry run python scripts/lab.py open
 ```
 
 `open` сверяет локальные context/state, выводит размещение и URL вида
-`https://ПУБЛИЧНЫЙ_IP:8006/` и завершается без облачной авторизации.
+`https://ПУБЛИЧНЫЙ_IP:8006/`, логин и Realm, автоматически копирует пароль
+в буфер обмена и завершается без облачной авторизации. Откройте URL в браузере
+и вставьте пароль в форму входа. Пароль на экран не выводится.
 Используется штатный сертификат Proxmox. При первом открытии примите
 предупреждение браузера для этого учебного стенда. Локальный CA не создаётся,
 сертификаты на компьютер оператора не устанавливаются. Nginx не используется.
@@ -198,7 +200,8 @@ Terraform подключается по HTTPS с `insecure = true`: шифров
 
 Суффикс `@pve` в поле User name не добавляйте: Realm передаётся отдельно.
 Полное имя `reviewer@pve` используется при обращении к API.
-Скопируйте пароль в буфер обмена и вставьте в поле Password:
+`open` уже копирует пароль. Если буфер недоступен, команда сообщает об ошибке.
+Для ручного копирования в PowerShell:
 
 ```powershell
 (Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password | Set-Clipboard
@@ -208,50 +211,27 @@ Terraform подключается по HTTPS с `insecure = true`: шифров
 
 У гостя нет публичного адреса. Подключение идёт через публичный адрес узла
 Proxmox по SSH на порту 22; выход оператора должен входить в разрешённые `/32`.
-После успешного `deploy` выполните один из блоков ниже в PowerShell 7 из корня клона.
-Нужны команды OpenSSH `ssh` и `ssh-keygen`.
-
-Краткий вариант для исходных адреса `10.111.0.10` и пользователя `student`:
+После успешного `deploy` выполните в PowerShell 7 из корня клона:
 
 ```powershell
-$hostIp = (Get-Content .local/runtime/context.json -Raw | ConvertFrom-Json).host.public_ip
-
-ssh -i .local/runtime/operator `
-    -o "ProxyCommand=ssh -i .local/runtime/operator -W %h:%p operator@$hostIp" `
-    student@10.111.0.10
+poetry run python scripts/lab.py ssh
 ```
 
-Используется стандартный файл OpenSSH `known_hosts`. При первом подключении
-SSH может запросить подтверждение ключей узла и гостя. Вариант ниже закрепляет
-оба ключа по локальным данным cloud-init и учитывает адрес гостя из контекста.
+Нужен установленный клиент OpenSSH (`ssh`). Команда без облачной авторизации
+проверяет локальные context/state и получает адреса и имя пользователя из
+контекста. Использует ключ `.local/runtime/operator`; пароль и ввод `yes` не нужны.
+При исходных настройках открывается оболочка `student` на `10.111.0.10`.
 
-Адреса и имя пользователя берутся из контекста стенда. Используется ключ
-оператора `.local/runtime/operator`, пароль не нужен. Ключи серверов закрепляются
-по локальным ключам, переданным через cloud-init; проверка SSH-ключей не отключается:
+Оба SSH-перехода проверяются по ключам, переданным узлу и гостю через cloud-init.
+Файлы `interactive-ssh.conf` и `interactive-known-hosts` создаются в
+`.local/runtime` из текущих доверенных локальных данных. Глобальный
+`~/.ssh/known_hosts` не читается и не изменяется: старый ключ другого гостя
+с тем же приватным IP не мешает подключению. Неожиданный ключ удалённого
+узла приводит к отказу подключения; проверка ключей не отключается.
+При отсутствии локальных ключей команда завершается с ошибкой, не создавая замену.
 
-```powershell
-$labContext = Get-Content .local/runtime/context.json -Raw | ConvertFrom-Json
-$hostIp = $labContext.host.public_ip
-$guestIp = ($labContext.config.guest.address -split '/')[0]
-$guestUser = $labContext.config.guest.username
-
-$pveHostKey = ssh-keygen -y -f .local/runtime/pve-host
-if ($LASTEXITCODE) { throw 'Не удалось прочитать SSH-ключ узла Proxmox.' }
-$guestHostKey = ssh-keygen -y -f .local/runtime/guest-host
-if ($LASTEXITCODE) { throw 'Не удалось прочитать SSH-ключ гостевой ВМ.' }
-@("$hostIp $pveHostKey", "$guestIp $guestHostKey") |
-    Set-Content -LiteralPath .local/runtime/manual-known-hosts -Encoding ascii
-
-ssh -i .local/runtime/operator `
-    -o IdentitiesOnly=yes `
-    -o UserKnownHostsFile=.local/runtime/manual-known-hosts `
-    -o StrictHostKeyChecking=yes `
-    -o "ProxyCommand=ssh -i .local/runtime/operator -o IdentitiesOnly=yes -o UserKnownHostsFile=.local/runtime/manual-known-hosts -o StrictHostKeyChecking=yes -W %h:%p operator@$hostIp" `
-    "${guestUser}@${guestIp}"
-```
-
-При исходной конфигурации откроется оболочка `student@dz10-guest`
-на `10.111.0.10`. В гостевой Debian можно проверить систему и выйти:
+Терминал передаётся SSH-сеансу. Перед подключением выводится подсказка выхода.
+В гостевой Debian можно проверить систему и выйти:
 
 ```bash
 hostname
@@ -259,10 +239,10 @@ cat /etc/os-release
 exit
 ```
 
-`ProxyCommand` передаёт SSH-соединение гостю через узел `operator@ПУБЛИЧНЫЙ_IP`.
-Прямой проброс публичного порта на гостя не используется. Служебный файл
-`manual-known-hosts` содержит только публичные ключи и удаляется вместе с runtime
-при `destroy`. Приватные ключи и весь каталог `.local` остаются локальными.
+Также можно выйти через Ctrl+D; аварийный разрыв OpenSSH — Enter, затем `~.`.
+До выхода из сеанса другие команды управления этим клоном блокируются
+защитой от одновременных операций. Прямой публичный порт гостя не открывается.
+Все ключи и служебные SSH-файлы остаются локальными и очищаются штатным `destroy`.
 
 ## Проверка
 
@@ -293,7 +273,7 @@ SSH-узел Proxmox. Ожидание гостя ограничено 30 мин
 | Воспроизводимый запуск | раздельные state, lock-файлы, закреплённые образы и версии |
 | Cloud-init, необязательная часть | пользователь, SSH, сеть, QEMU Guest Agent |
 
-На Windows x64 с Python 3.14.2 пройдены 67 Python-тестов, 4 Terraform-теста
+На Windows x64 с Python 3.14.2 пройдены 82 Python-теста, 4 Terraform-теста
 с подставными провайдерами, Ruff, `terraform fmt`, `validate` и проверка lock-файла
 Poetry: [результаты локальных проверок](evidence/local-checks.json).
 Также подтверждены подготовка из чистой копии и повторный `setup`:
@@ -303,6 +283,12 @@ Poetry: [результаты локальных проверок](evidence/loca
 проверки и команды воспроизведения. Это не покрытие всего проекта.
 Функция подсказок `Lab.open` также покрыта на 100% по строкам и ветвям —
 [отчёт](evidence/ui-open-coverage.json).
+Модуль локального доступа и изменённые функции управления также покрыты
+на 100% по строкам и ветвям — [отчёт](evidence/access-coverage.json).
+Проверены разбор конфигурации настоящим OpenSSH и отказ при неожиданном
+ключе локального тестового сервера; копирование пароля и передача терминала
+проверены с подменой системных вызовов, без изменения настоящего буфера.
+Новый интерактивный вход в облачного гостя этими тестами не подтверждён.
 Новый модуль HTTPS API Proxmox и изменённые `Lab.deploy`/`Lab.verify`
 покрыты на 100% по строкам и ветвям — [отчёт](evidence/proxmox-api-coverage.json).
 Вывод прогресса, восстановление SSH и настройка `kvm=0` через HTTPS API

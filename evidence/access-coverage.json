@@ -1,0 +1,97 @@
+{
+  "verification": "Local tests, native OpenSSH config parsing and loopback host-key rejection. No live guest session or real clipboard mutation tested.",
+  "coverage_version": "7.17.4",
+  "branch_coverage": true,
+  "scopes": {
+    "scripts/access.py": {
+      "covered_lines": 46,
+      "num_statements": 46,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 18,
+      "num_partial_branches": 0,
+      "covered_branches": 18,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "scripts/lab.py:Lab.open": {
+      "covered_lines": 14,
+      "num_statements": 14,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 0,
+      "num_partial_branches": 0,
+      "covered_branches": 0,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "scripts/lab.py:Lab.local_host": {
+      "covered_lines": 10,
+      "num_statements": 10,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 6,
+      "num_partial_branches": 0,
+      "covered_branches": 6,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "scripts/lab.py:Lab.ssh": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 0,
+      "num_partial_branches": 0,
+      "covered_branches": 0,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "scripts/lab.py:main": {
+      "covered_lines": 12,
+      "num_statements": 12,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 0,
+      "num_partial_branches": 0,
+      "covered_branches": 0,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    }
+  },
+  "scope_note": "100% applies to listed module and functions, not the whole repository.",
+  "source_sha256": {
+    "scripts/access.py": "8358978b3b199278b2477151bbda3b80c84759be30e78c3e0614a29b20b02eba",
+    "scripts/lab.py": "e5556b25e2c6f34b23d4d9c5b16a857d004651756ac6687561daeef7ece0efbc"
+  },
+  "commands": [
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/access.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/access.coverage -o .tools/coverage/access.json"
+  ],
+  "full_report": ".tools/coverage/access.json"
+}

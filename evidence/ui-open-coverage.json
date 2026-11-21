@@ -1,28 +1,28 @@
 {
   "scope": "scripts/lab.py:Lab.open",
-  "source_sha256": "75a04e824dd92275367fce18c8530edb3074d548d00e670e46742a8a1b6a1907",
+  "source_sha256": "e5556b25e2c6f34b23d4d9c5b16a857d004651756ac6687561daeef7ece0efbc",
   "coverage_version": "7.17.4",
   "branch_coverage": true,
   "summary": {
-    "covered_lines": 17,
-    "num_statements": 17,
+    "covered_lines": 14,
+    "num_statements": 14,
     "percent_covered": 100.0,
     "percent_covered_display": "100",
     "missing_lines": 0,
     "excluded_lines": 0,
     "percent_statements_covered": 100.0,
     "percent_statements_covered_display": "100",
-    "num_branches": 6,
+    "num_branches": 0,
     "num_partial_branches": 0,
-    "covered_branches": 6,
+    "covered_branches": 0,
     "missing_branches": 0,
     "percent_branches_covered": 100.0,
     "percent_branches_covered_display": "100"
   },
   "scope_note": "100% applies to Lab.open only, not the whole module or repository.",
   "commands": [
-    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/proxmox-api.coverage -m unittest discover -s tests -q",
-    "poetry run coverage json --data-file=.tools/coverage/proxmox-api.coverage -o .tools/coverage/proxmox-api.json"
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/access.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/access.coverage -o .tools/coverage/access.json"
   ],
-  "full_report": ".tools/coverage/proxmox-api.json"
+  "full_report": ".tools/coverage/access.json"
 }

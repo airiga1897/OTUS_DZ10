@@ -12,6 +12,7 @@ import urllib.request
 import zipfile
 from contextlib import contextmanager
 
+from access import copy_password, guest_shell
 from common import ROOT, LabError, cleanup, config, load_json, merge_cidrs, private_dir, save_json
 from progress import Stage, report_stage
 from proxmox import ProxmoxAPI
@@ -325,8 +326,7 @@ class Lab:
         )
         print("Параметры ВМ, гостевая ОС, cloud-init, SSH, HTTPS API и повторные планы проверены.")
 
-    @report_stage("Проверка локального state и подготовка URL")
-    def open(self):
+    def local_host(self):
         if not self.context or self.context["phase"] not in ("deployed", "verified"):
             raise LabError("Нет завершённого локального развёртывания")
         state = load_json(self.runtime / "yc.tfstate", {})
@@ -339,19 +339,32 @@ class Lab:
             != self.context["config"]["guest"]["vm_id"]
         ):
             raise LabError("State гостя не соответствует контексту")
+        return host
+
+    @report_stage("Проверка локального state и подготовка веб-доступа")
+    def open(self):
+        host = self.local_host()
         print("Размещение: YC / " + self.context["identity"]["zone"])
         print(f"https://{host['public_ip']}:8006/")
         print("User name: reviewer (без @pve)")
         print("Realm (тип аутентификации): Proxmox VE authentication server (pve)")
         print("Выберите указанный Realm в списке формы входа.")
-        print("Скопировать пароль в буфер обмена (PowerShell):")
-        print(
-            "(Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password"
-            " | Set-Clipboard"
-        )
+        try:
+            copy_password(load_json(self.runtime / "credentials.json", {}).get("ui_password"))
+        except LabError:
+            print("Ручное копирование (PowerShell):")
+            print(
+                "(Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password | Set-Clipboard"
+            )
+            raise
+        print("Пароль скопирован в буфер обмена. Вставьте его в форму входа.")
         print(
             "Штатный сертификат PVE: примите предупреждение браузера; проверка Terraform отключена."
         )
+
+    def ssh(self):
+        host = self.local_host()
+        guest_shell(self.runtime, host, self.context["config"]["guest"])
 
     def destroy(self):
         if not self.context:
@@ -417,7 +430,7 @@ class Lab:
 
 def main():
     parser = argparse.ArgumentParser(description="OTUS DZ10: Proxmox on YC")
-    parser.add_argument("command", choices=["deploy", "verify", "open", "destroy"])
+    parser.add_argument("command", choices=["deploy", "verify", "open", "ssh", "destroy"])
     parser.add_argument(
         "--yc-profile",
         action="store_true",
@@ -426,7 +439,11 @@ def main():
     args = parser.parse_args()
     try:
         with exclusive(ROOT):
-            api = YC.from_profile(ROOT) if args.yc_profile and args.command != "open" else None
+            api = (
+                YC.from_profile(ROOT)
+                if args.yc_profile and args.command not in ("open", "ssh")
+                else None
+            )
             getattr(Lab(yc=api), args.command)()
     except (LabError, OSError, ValueError) as exc:
         # These exception classes carry only sanitized application messages or local paths.
