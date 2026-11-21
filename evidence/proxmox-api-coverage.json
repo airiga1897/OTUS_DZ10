@@ -1,0 +1,65 @@
+{
+  "verification": "local simulations, no live PVE mutation performed",
+  "coverage_version": "7.17.4",
+  "branch_coverage": true,
+  "scopes": {
+    "scripts/proxmox.py": {
+      "covered_lines": 48,
+      "num_statements": 48,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 14,
+      "num_partial_branches": 0,
+      "covered_branches": 14,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "scripts/lab.py:Lab.deploy": {
+      "covered_lines": 53,
+      "num_statements": 53,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 2,
+      "num_partial_branches": 0,
+      "covered_branches": 2,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    },
+    "scripts/lab.py:Lab.verify": {
+      "covered_lines": 17,
+      "num_statements": 17,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100",
+      "num_branches": 2,
+      "num_partial_branches": 0,
+      "covered_branches": 2,
+      "missing_branches": 0,
+      "percent_branches_covered": 100.0,
+      "percent_branches_covered_display": "100"
+    }
+  },
+  "scope_note": "100% applies to listed scopes, not the whole repository.",
+  "source_sha256": {
+    "scripts/proxmox.py": "e39a2f8a5f5da96f4d9fbe6ba0624a2b2540f649a8321ae888e81a0ad109eabb",
+    "scripts/lab.py": "75a04e824dd92275367fce18c8530edb3074d548d00e670e46742a8a1b6a1907"
+  },
+  "commands": [
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/proxmox-api.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/proxmox-api.coverage -o .tools/coverage/proxmox-api.json"
+  ],
+  "full_report": ".tools/coverage/proxmox-api.json"
+}

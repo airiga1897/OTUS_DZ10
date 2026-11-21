@@ -14,6 +14,7 @@ from contextlib import contextmanager
 
 from common import ROOT, LabError, cleanup, config, load_json, merge_cidrs, private_dir, save_json
 from progress import Stage, report_stage
+from proxmox import ProxmoxAPI
 from remote import Remote
 from security import cloud_init, remove_legacy_ca, ssh_key
 from yc import YC
@@ -227,24 +228,25 @@ class Lab:
             print("Установка и настройка Proxmox VE.")
             remote.connect()
             save_json(self.runtime / "credentials.json", remote.configure(self.root, self.context))
-            self.tls_check()
-            pve = self.tf("proxmox")
-            pve.init()
-            existing = pve.resources()
-            if not existing:
-                # API cannot start a kvm=1 guest in YC. Create stopped, set the unsupported
-                # provider field through qm, then let Terraform perform the actual start.
-                pve.apply(self.pve_variables(cfg, start=False))
-            vm_id = int(cfg["guest"]["vm_id"])
-            with Stage("Настройка гостя для QEMU без KVM"):
-                remote.command(f"sudo qm set {vm_id} --kvm 0")
-            print("Terraform создаёт и запускает гостевую ВМ в режиме QEMU.")
-            pve.apply(self.pve_variables(cfg))
-            self.context["guest_deleted"] = False
-            self.context["phase"] = "deployed"
-            self.save()
         finally:
             remote.close()
+        # No idle SSH transport is retained while Terraform imports or starts the guest.
+        self.tls_check()
+        pve = self.tf("proxmox")
+        pve.init()
+        if not pve.resources():
+            # Create stopped, configure the provider's unsupported field via PVE HTTPS,
+            # then let Terraform perform the actual start.
+            pve.apply(self.pve_variables(cfg, start=False))
+        credentials = load_json(self.runtime / "credentials.json")
+        ProxmoxAPI(self.context["host"]["public_ip"], credentials["api_token"]).disable_kvm(
+            cfg["host"]["name"], cfg["guest"]["vm_id"]
+        )
+        print("Terraform создаёт и запускает гостевую ВМ в режиме QEMU.")
+        pve.apply(self.pve_variables(cfg))
+        self.context["guest_deleted"] = False
+        self.context["phase"] = "deployed"
+        self.save()
         print("Стенд оставлен работающим. Выполните verify для проверки гостевой ОС.")
 
     @report_stage("Проверка входа в Proxmox и cookie-сеанса")
@@ -297,15 +299,15 @@ class Lab:
         try:
             remote.connect()
             remote.verify_guest()
-            for module, variables in (
-                ("yc", self.yc_variables(cfg)),
-                ("proxmox", self.pve_variables(cfg)),
-            ):
-                tf = self.tf(module)
-                tf.init()
-                tf.apply(variables, unchanged=True)
         finally:
             remote.close()
+        for module, variables in (
+            ("yc", self.yc_variables(cfg)),
+            ("proxmox", self.pve_variables(cfg)),
+        ):
+            tf = self.tf(module)
+            tf.init()
+            tf.apply(variables, unchanged=True)
         self.context["phase"] = "verified"
         self.save()
         # Only non-secret evidence; no IDs, addresses, credentials or raw API responses.

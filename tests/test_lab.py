@@ -395,6 +395,7 @@ class LifecycleTests(unittest.TestCase):
         self.cfg["admin_cidrs"] = []
         self.api = FakeYC(self.events)
         self.fail_module = None
+        self.remote_open = False
         case = self
 
         class FakeTF:
@@ -409,6 +410,9 @@ class LifecycleTests(unittest.TestCase):
                 return case.states[self.module]
 
             def apply(self, variables, **kwargs):
+                if self.module == "proxmox":
+                    if case.remote_open:
+                        raise AssertionError("SSH must be closed before waiting for Terraform")
                 case.events.append(
                     self.module + ("-destroy" if kwargs.get("destroy") else "-apply")
                 )
@@ -444,6 +448,7 @@ class LifecycleTests(unittest.TestCase):
 
             def connect(self):
                 case.events.append("ssh")
+                case.remote_open = True
 
             def configure(self, *args):
                 case.events.append("configure")
@@ -454,12 +459,18 @@ class LifecycleTests(unittest.TestCase):
                 return "[]"
 
             def close(self):
-                pass
+                case.remote_open = False
+                case.events.append("ssh-close")
 
             def verify_guest(self):
                 case.events.append("guest-verify")
 
         self.tf_factory, self.remote_factory = FakeTF, FakeRemote
+        patcher = patch("lab.ProxmoxAPI", create=True)
+        api_class = patcher.start()
+        self.pve_api = api_class.return_value
+        api_class.return_value.disable_kvm.side_effect = lambda *args: self.events.append("kvm-api")
+        self.addCleanup(patcher.stop)
         for target, value in (("lab.config", self.cfg),):
             patcher = patch(target, return_value=value)
             patcher.start()
@@ -486,6 +497,9 @@ class LifecycleTests(unittest.TestCase):
         self.assertLess(self.events.index("preflight"), self.events.index("yc-apply"))
         self.assertLess(self.events.index("ip"), self.events.index("configure"))
         self.assertLess(self.events.index("configure"), self.events.index("proxmox-apply"))
+        self.assertLess(self.events.index("ssh-close"), self.events.index("proxmox-apply"))
+        self.assertLess(self.events.index("proxmox-apply"), self.events.index("kvm-api"))
+        self.assertNotIn("qm", self.events)
         calls = [c for c in self.calls if c[0] == "proxmox"]
         self.assertEqual([c[1]["start_guest"] for c in calls], [False, True])
         self.api.ip = "1.1.1.1"
@@ -511,6 +525,28 @@ class LifecycleTests(unittest.TestCase):
         self.fail_module = None
         self.lab().deploy()
         self.assertEqual(self.lab().context["phase"], "deployed")
+
+    def test_api_failure_preserves_stopped_guest_and_retry_does_not_recreate_it(self):
+        self.pve_api.disable_kvm.side_effect = LabError("Synthetic API failure")
+        with self.assertRaises(LabError):
+            self.lab().deploy()
+        self.assertTrue((self.root / ".local/runtime/proxmox.tfstate").exists())
+        self.assertFalse(self.remote_open)
+        self.assertEqual([c[1]["start_guest"] for c in self.calls if c[0] == "proxmox"], [False])
+        self.pve_api.disable_kvm.side_effect = lambda *args: self.events.append("kvm-api")
+        self.lab().deploy()
+        self.assertEqual(
+            [c[1]["start_guest"] for c in self.calls if c[0] == "proxmox"], [False, True]
+        )
+        self.assertEqual(self.lab().context["phase"], "deployed")
+
+    def test_verify_closes_guest_ssh_before_terraform_plans(self):
+        self.lab().deploy()
+        self.events.clear()
+        self.lab().verify()
+        self.assertLess(self.events.index("guest-verify"), self.events.index("ssh-close"))
+        self.assertLess(self.events.index("ssh-close"), self.events.index("yc-apply"))
+        self.assertEqual(self.lab().context["phase"], "verified")
 
     def test_placement_is_not_overwritten(self):
         self.lab().deploy()

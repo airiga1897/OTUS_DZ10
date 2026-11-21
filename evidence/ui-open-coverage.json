@@ -1,6 +1,6 @@
 {
   "scope": "scripts/lab.py:Lab.open",
-  "source_sha256": "cd80575f7d06aa22425d01b6a186ce31d02a7fae2f73fdfb4c889a104e4087c9",
+  "source_sha256": "75a04e824dd92275367fce18c8530edb3074d548d00e670e46742a8a1b6a1907",
   "coverage_version": "7.17.4",
   "branch_coverage": true,
   "summary": {
@@ -21,8 +21,8 @@
   },
   "scope_note": "100% applies to Lab.open only, not the whole module or repository.",
   "commands": [
-    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/ui-open.coverage -m unittest discover -s tests -q",
-    "poetry run coverage json --data-file=.tools/coverage/ui-open.coverage -o .tools/coverage/ui-open.json"
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/proxmox-api.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/proxmox-api.coverage -o .tools/coverage/proxmox-api.json"
   ],
-  "full_report": ".tools/coverage/ui-open.json"
+  "full_report": ".tools/coverage/proxmox-api.json"
 }
