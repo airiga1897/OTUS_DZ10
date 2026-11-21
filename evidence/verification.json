@@ -1,0 +1,9 @@
+{
+  "guest_parameters": "passed",
+  "guest_ssh": "passed",
+  "cloud_init": "passed",
+  "https_api": "passed",
+  "web_account_login_cookie_session": "passed",
+  "certificate_verification": "disabled_by_agreement",
+  "terraform_no_changes": "passed"
+}

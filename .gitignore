@@ -1,0 +1,14 @@
+.local/
+.tools/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+**/.terraform/
+*.tfstate*
+*.tfplan
+*.tfvars
+*.auto.tfvars.json
+crash.log
+!*.tfvars.example
