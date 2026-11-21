@@ -12,6 +12,7 @@ paramiko = "4.0.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "0.14.5"
+coverage = "7.17.4"
 
 [tool.ruff]
 line-length = 100

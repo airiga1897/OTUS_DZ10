@@ -54,7 +54,7 @@ class Remote:
             except paramiko.BadHostKeyException:
                 client.close()
                 raise LabError("SSH-ключ узла не соответствует закреплённому") from None
-            except (OSError, paramiko.SSHException):
+            except (OSError, paramiko.SSHException, EOFError, SSHDisconnected):
                 client.close()
                 time.sleep(self.cfg["timeouts"]["poll_seconds"])
         raise SSHUnavailable(

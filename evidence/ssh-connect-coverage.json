@@ -1,0 +1,29 @@
+{
+  "scope": "scripts/remote.py:Remote.connect",
+  "coverage_version": "7.17.4",
+  "branch_coverage": true,
+  "summary": {
+    "covered_lines": 22,
+    "num_statements": 22,
+    "percent_covered": 100.0,
+    "percent_covered_display": "100",
+    "missing_lines": 0,
+    "excluded_lines": 0,
+    "percent_statements_covered": 100.0,
+    "percent_statements_covered_display": "100",
+    "num_branches": 4,
+    "num_partial_branches": 0,
+    "covered_branches": 4,
+    "missing_branches": 0,
+    "percent_branches_covered": 100.0,
+    "percent_branches_covered_display": "100"
+  },
+  "module_percent_covered": 59.7972972972973,
+  "module_scope_note": "100% applies to Remote.connect only, not the whole module or repository.",
+  "commands": [
+    "poetry run coverage run --branch --source=scripts --data-file=.tools/coverage/ssh-connect.coverage -m unittest discover -s tests -q",
+    "poetry run coverage json --data-file=.tools/coverage/ssh-connect.coverage -o .tools/coverage/ssh-connect.json"
+  ],
+  "full_report": ".tools/coverage/ssh-connect.json",
+  "source_sha256": "6f55d04f2c59308f8f0d4f2b6e955c07f4aac436463f9e4902c53e1ea0874882"
+}
