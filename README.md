@@ -349,6 +349,12 @@ Test-Path -LiteralPath .local/yc
 Для следующего входа повторите `scripts/setup.ps1` и `yc init` с путём
 `.local/yc/config.yaml`, как описано в разделе подготовки.
 
+После удаления стенда и локального профиля YC очистите пароль из буфера обмена:
+
+```powershell
+Set-Clipboard -Value $null
+```
+
 ## Файлы проекта
 
 | Каталог | Назначение |
