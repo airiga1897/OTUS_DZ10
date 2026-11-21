@@ -1,0 +1,11 @@
+{
+  "python_syntax": "passed",
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "unit_tests": "passed",
+  "terraform_fmt": "passed",
+  "terraform_validate": "passed",
+  "terraform_mock_tests": "passed",
+  "poetry_lock": "passed",
+  "cloud_tested": false
+}

@@ -1,0 +1,7 @@
+{
+  "id": "fd8ujnl2st97p9daufr1",
+  "name": "debian-13-v20261117",
+  "family": "debian-13",
+  "status": "READY",
+  "minDiskSize": "5368709120"
+}

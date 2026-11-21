@@ -1,0 +1,58 @@
+{
+  "namespace": "otus-dz10",
+  "zone": "ru-central1-d",
+  "platform_id": "standard-v3",
+  "host": {
+    "name": "dz10-pve",
+    "cores": 4,
+    "memory_gib": 8,
+    "boot_gib": 30,
+    "data_gib": 20,
+    "disk_type": "network-hdd",
+    "image_id": "fd8ujnl2st97p9daufr1"
+  },
+  "network_cidr": "10.110.0.0/24",
+  "admin_cidrs": [
+    "135.106.162.122/32",
+    "153.80.247.175/32",
+    "217.177.34.196/32",
+    "89.125.117.157/32",
+    "89.125.250.123/32",
+    "95.31.25.30/32"
+  ],
+  "guest": {
+    "name": "dz10-guest",
+    "vm_id": 110,
+    "cores": 1,
+    "memory_mib": 2048,
+    "disk_gib": 10,
+    "bridge": "vmbr10",
+    "address": "10.111.0.10/24",
+    "gateway": "10.111.0.1",
+    "dns": "1.1.1.1",
+    "username": "student",
+    "cpu_type": "qemu64",
+    "image_url": "https://cloud.debian.org/images/cloud/trixie/20261116-2664/debian-13-genericcloud-amd64-20261116-2664.qcow2",
+    "image_sha512": "37cb32b320820417eb04b335afcf489bfb4cecce4a957190d09cb2bffbe02b56a1cadd62d78c6ead92aa7839d5ea65e4260f994bbb4b54490df59fdf11ee1d97"
+  },
+  "proxmox": {
+    "version": "9.2.0",
+    "kernel_package": "proxmox-default-kernel",
+    "kernel_version": "2.1.0",
+    "key_sha256": "136673be77aba35dcce385b28737689ad64fd785a797e57897589aed08db6e45"
+  },
+  "timeouts": {
+    "host_seconds": 1800,
+    "guest_seconds": 1800,
+    "poll_seconds": 10
+  },
+  "tools": {
+    "terraform": "1.13.5",
+    "poetry": "2.4.1",
+    "yc": {
+      "version": "1.47.0",
+      "url": "https://storage.yandexcloud.net/yandexcloud-yc/release/1.47.0/windows/amd64/yc.exe",
+      "sha256": "60df5b95a86b691af69b0a31853d7f6c544d9f4820564e460f8c2f434917028c"
+    }
+  }
+}
