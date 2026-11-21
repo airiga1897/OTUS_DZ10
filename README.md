@@ -182,10 +182,11 @@ poetry run python scripts/lab.py open
 сертификаты на компьютер оператора не устанавливаются. Nginx не используется.
 Terraform подключается по HTTPS с `insecure = true`: шифрование сохраняется,
 проверка подлинности сертификата отключена по согласованному условию стенда.
-Для просмотра предназначена учётная запись `reviewer@pve`. Её пароль:
+Для просмотра предназначена учётная запись `reviewer@pve`. Скопируйте её пароль
+в буфер обмена и вставьте в форму входа Proxmox:
 
 ```powershell
-(Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password
+(Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password | Set-Clipboard
 ```
 
 ### Подключение к гостевой ВМ по SSH извне
