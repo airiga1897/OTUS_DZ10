@@ -188,6 +188,52 @@ Terraform подключается по HTTPS с `insecure = true`: шифров
 (Get-Content .local/runtime/credentials.json -Raw | ConvertFrom-Json).ui_password
 ```
 
+### Подключение к гостевой ВМ по SSH извне
+
+У гостя нет публичного адреса. Подключение идёт через публичный адрес узла
+Proxmox по SSH на порту 22; выход оператора должен входить в разрешённые `/32`.
+После успешного `deploy` выполните следующий блок в PowerShell 7 из корня клона.
+Нужны команды OpenSSH `ssh` и `ssh-keygen`.
+
+Адреса и имя пользователя берутся из контекста стенда. Используется ключ
+оператора `.local/runtime/operator`, пароль не нужен. Ключи серверов закрепляются
+по локальным ключам, переданным через cloud-init; проверка SSH-ключей не отключается:
+
+```powershell
+$labContext = Get-Content .local/runtime/context.json -Raw | ConvertFrom-Json
+$hostIp = $labContext.host.public_ip
+$guestIp = ($labContext.config.guest.address -split '/')[0]
+$guestUser = $labContext.config.guest.username
+
+$pveHostKey = ssh-keygen -y -f .local/runtime/pve-host
+if ($LASTEXITCODE) { throw 'Не удалось прочитать SSH-ключ узла Proxmox.' }
+$guestHostKey = ssh-keygen -y -f .local/runtime/guest-host
+if ($LASTEXITCODE) { throw 'Не удалось прочитать SSH-ключ гостевой ВМ.' }
+@("$hostIp $pveHostKey", "$guestIp $guestHostKey") |
+    Set-Content -LiteralPath .local/runtime/manual-known-hosts -Encoding ascii
+
+ssh -i .local/runtime/operator `
+    -o IdentitiesOnly=yes `
+    -o UserKnownHostsFile=.local/runtime/manual-known-hosts `
+    -o StrictHostKeyChecking=yes `
+    -o "ProxyCommand=ssh -i .local/runtime/operator -o IdentitiesOnly=yes -o UserKnownHostsFile=.local/runtime/manual-known-hosts -o StrictHostKeyChecking=yes -W %h:%p operator@$hostIp" `
+    "${guestUser}@${guestIp}"
+```
+
+При исходной конфигурации откроется оболочка `student@dz10-guest`
+на `10.111.0.10`. В гостевой Debian можно проверить систему и выйти:
+
+```bash
+hostname
+cat /etc/os-release
+exit
+```
+
+`ProxyCommand` передаёт SSH-соединение гостю через узел `operator@ПУБЛИЧНЫЙ_IP`.
+Прямой проброс публичного порта на гостя не используется. Служебный файл
+`manual-known-hosts` содержит только публичные ключи и удаляется вместе с runtime
+при `destroy`. Приватные ключи и весь каталог `.local` остаются локальными.
+
 ## Проверка
 
 Локальные проверки не создают облачные ресурсы:
