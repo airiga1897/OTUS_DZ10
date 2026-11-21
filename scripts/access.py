@@ -4,6 +4,7 @@ import ipaddress
 import os
 import re
 import subprocess
+import webbrowser
 from pathlib import Path
 
 from common import LabError
@@ -38,6 +39,16 @@ def copy_password(password: object) -> None:
         raise LabError("Не удалось скопировать пароль в буфер обмена") from None
     if result.returncode:
         raise LabError("Не удалось скопировать пароль в буфер обмена")
+
+
+def open_browser(url: str) -> None:
+    """Ask the default browser to open the public URL without credentials."""
+    try:
+        opened = webbrowser.open(url, new=2)
+    except (OSError, webbrowser.Error):
+        raise LabError("Не удалось открыть браузер; откройте указанный URL вручную") from None
+    if not opened:
+        raise LabError("Не удалось открыть браузер; откройте указанный URL вручную")
 
 
 def guest_shell(runtime: Path, host: dict, guest: dict) -> None:

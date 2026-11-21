@@ -12,7 +12,7 @@ import urllib.request
 import zipfile
 from contextlib import contextmanager
 
-from access import copy_password, guest_shell
+from access import copy_password, guest_shell, open_browser
 from common import ROOT, LabError, cleanup, config, load_json, merge_cidrs, private_dir, save_json
 from progress import Stage, report_stage
 from proxmox import ProxmoxAPI
@@ -361,6 +361,9 @@ class Lab:
         print(
             "Штатный сертификат PVE: примите предупреждение браузера; проверка Terraform отключена."
         )
+
+        open_browser(f"https://{host['public_ip']}:8006/")
+        print("URL передан браузеру по умолчанию.")
 
     def ssh(self):
         host = self.local_host()

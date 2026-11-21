@@ -1,11 +1,11 @@
 {
   "scope": "scripts/lab.py:Lab.open",
-  "source_sha256": "e5556b25e2c6f34b23d4d9c5b16a857d004651756ac6687561daeef7ece0efbc",
+  "source_sha256": "d4492db8655ff8532836e80c2cc53996c2f12a308ddbf70afb60d50b5a4217cf",
   "coverage_version": "7.17.4",
   "branch_coverage": true,
   "summary": {
-    "covered_lines": 14,
-    "num_statements": 14,
+    "covered_lines": 16,
+    "num_statements": 16,
     "percent_covered": 100.0,
     "percent_covered_display": "100",
     "missing_lines": 0,

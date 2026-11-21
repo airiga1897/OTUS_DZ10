@@ -13,11 +13,31 @@ from unittest.mock import patch
 import paramiko
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from access import copy_password, guest_shell  # noqa: E402
+from access import copy_password, guest_shell, open_browser  # noqa: E402
 from common import LabError  # noqa: E402
 from security import ssh_key  # noqa: E402
 
 NATIVE_RUN = subprocess.run
+
+
+class BrowserTests(unittest.TestCase):
+    def test_default_browser_receives_url_only(self):
+        with patch("access.webbrowser.open", return_value=True) as browser:
+            open_browser("https://192.0.2.1:8006/")
+        browser.assert_called_once_with("https://192.0.2.1:8006/", new=2)
+
+    def test_unavailable_browser_has_manual_fallback(self):
+        with patch("access.webbrowser.open", return_value=False):
+            with self.assertRaisesRegex(LabError, "вручную"):
+                open_browser("https://192.0.2.1:8006/")
+        for error in (
+            OSError("synthetic-secret"),
+            __import__("webbrowser").Error("synthetic-secret"),
+        ):
+            with patch("access.webbrowser.open", side_effect=error):
+                with self.assertRaises(LabError) as caught:
+                    open_browser("https://192.0.2.1:8006/")
+                self.assertNotIn("synthetic-secret", str(caught.exception))
 
 
 class ClipboardTests(unittest.TestCase):
